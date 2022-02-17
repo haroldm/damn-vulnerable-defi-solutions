@@ -92,6 +92,6 @@ contract WalletRegistry is IProxyCreationCallback, Ownable {
         wallets[walletOwner] = walletAddress;
 
         // Pay tokens to the newly created wallet
-        token.transfer(walletAddress, TOKEN_PAYMENT);        
+        token.transfer(walletAddress, TOKEN_PAYMENT);
     }
 }
