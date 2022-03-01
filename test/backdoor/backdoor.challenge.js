@@ -37,35 +37,6 @@ describe('[Challenge] Backdoor', function () {
 
     it('Exploit', async function () {
         /** CODE YOUR EXPLOIT HERE */
-
-        // Create wallets for users.
-        /*
-        let usersAsSigners = [alice, bob, charlie, david];
-        for (let i = 0; i < users.length; i++) {
-            var initCode = this.masterCopy.interface.encodeFunctionData("setup", [
-                [users[i]],                         // _owners
-                1,                                  // _threshold
-                ethers.constants.AddressZero,       // to (optional delegateCall)
-                [],                                 // data (optional delegateCall)
-                ethers.constants.AddressZero,       // fallbackHandler
-                this.token.address,                 // paymentToken
-                0,                                  // payment
-                ethers.constants.AddressZero        // paymentReceiver
-            ]);
-
-
-            await this.walletFactory.connect(usersAsSigners[i]).createProxyWithCallback(
-                this.masterCopy.address,
-                initCode,
-                0,
-                this.walletRegistry.address
-            );
-        }
-        const wallet = await this.walletRegistry.wallets(alice.address);
-        const balance = await this.token.balanceOf(wallet);
-        console.log("Alice balance: %s DVT", ethers.utils.formatEther(balance));
-        // */
-
         const BackdoorAttacker = await ethers.getContractFactory('BackdoorAttacker', attacker);
         var attack_contract = await BackdoorAttacker.deploy(this.token.address);
 
